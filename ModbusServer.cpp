@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+#include <exception>
 #include "ModbusServer.h"
 
 using std::string;
@@ -22,49 +24,59 @@ using std::string;
         printf("[%s %s %d]%s\n",__FILE__,__func__,__LINE__, pBuf); \
     } while (0)
 
-ModbusServer::ModbusServer(const string &ip, const int port)
-        : m_ip(ip), m_port(port)
+ModbusServer::ModbusServer(const std::string &ip
+                                , const int port
+                                , unsigned int start_bits
+                                , unsigned int nb_bits
+                                , unsigned int start_input_bits
+                                , unsigned int nb_input_bits
+                                , unsigned int start_registers
+                                , unsigned int nb_registers
+                                , unsigned int start_input_registers
+                                , unsigned int nb_input_registers)
+                                : m_ip(ip)
+                                , m_port(port)
+                                , m_start_bits(start_bits)
+                                , m_nb_bits(nb_bits)
+                                , m_start_input_bits(start_input_bits)
+                                , m_nb_input_bits(nb_input_bits)
+                                , m_start_registers(start_registers)
+                                , m_nb_registers(nb_registers)
+                                , m_start_input_registers(start_input_registers)
+                                , m_nb_input_registers(nb_input_registers)
 {
-    Init();
 }
 
 ModbusServer::~ModbusServer()
 {
-    Stop();
-}
-
-void ModbusServer::ModbusMapping(int nb_bits,
-                         int nb_input_bits,
-                         int nb_registers,
-                         int nb_input_registers)
-{
-
+    if (!m_stop) Stop();
 }
 
 void ModbusServer::Init()
 {
+    m_stop = false;
+    m_stopped = false;
     m_ctx = modbus_new_tcp(m_ip.c_str(), m_port);
-    /* modbus_set_debug(m_ctx, TRUE); */
-
-    m_mapping = modbus_mapping_new(200, 200, 200, 200);
-/*
-    unsigned char tmp[200] = {0};
-
-    modbus_set_bits_from_bytes(m_mapping->tab_bits, 0, 100, tmp);
-    modbus_set_bits_from_bytes(m_mapping->tab_input_bits, 0, 100, tmp);
-    modbus_set_bits_from_bytes((unsigned char*)m_mapping->tab_registers, 0, 100*8*2, tmp);
-    modbus_set_bits_from_bytes((unsigned char*)m_mapping->tab_input_registers, 0, 100*8*2, tmp);
-*/
+    m_mapping = modbus_mapping_new_start_address(m_start_bits
+                                                    , m_nb_bits
+                                                    , m_start_input_bits
+                                                    , m_nb_input_bits
+                                                    , m_start_registers
+                                                    , m_nb_registers
+                                                    , m_start_input_registers
+                                                    , m_nb_input_registers);
     if (m_mapping == NULL) {
-        fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
-        modbus_free(m_ctx);
-        return;
+        Stop();
+        printf("ModbusMapping error\n");
+        throw;
     }
     m_fd = modbus_tcp_listen(m_ctx, 1);
 
 }
+
 void ModbusServer::Start()
 {
+    Init();
     int master_socket;
     int rc;
     fd_set refset;
@@ -81,7 +93,7 @@ void ModbusServer::Start()
     /* Keep track of the max file descriptor */
     fdmax = m_fd;
 
-    for (;;)
+    while (!m_stop)
     {
         rdset = refset;
         if (select(fdmax+1, &rdset, NULL, NULL, NULL) == -1)
@@ -157,11 +169,13 @@ void ModbusServer::Start()
             }
         }
     }
-
+    m_stopped = true;
 }
 
 void ModbusServer::Stop()
 {
+    m_stop = true;
+    while (!m_stopped) usleep(100);
     modbus_mapping_free(m_mapping);
     modbus_close(m_ctx);
     modbus_free(m_ctx);

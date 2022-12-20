@@ -27,7 +27,7 @@
    All these functions are called with random values on a address
    range defined by the following defines.
 */
-#define LOOP          10
+#define LOOP          100
 #define SERVER_ID     17
 #define ADDRESS_START 0
 #define ADDRESS_END   99
@@ -70,7 +70,7 @@ int main(void)
 
     /* TCP */
     ctx = modbus_new_tcp("0.0.0.0", 1502);
-    modbus_set_debug(ctx, TRUE);
+    //modbus_set_debug(ctx, TRUE);
 
     if (modbus_connect(ctx) == -1) {
         fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
