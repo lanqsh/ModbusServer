@@ -45,6 +45,7 @@ ModbusServer::ModbusServer(const std::string &ip
                                 , m_start_input_registers(start_input_registers)
                                 , m_nb_input_registers(nb_input_registers)
 {
+    Init();
 }
 
 ModbusServer::~ModbusServer()
@@ -52,31 +53,8 @@ ModbusServer::~ModbusServer()
     if (!m_stop) Stop();
 }
 
-void ModbusServer::Init()
-{
-    m_stop = false;
-    m_stopped = false;
-    m_ctx = modbus_new_tcp(m_ip.c_str(), m_port);
-    m_mapping = modbus_mapping_new_start_address(m_start_bits
-                                                    , m_nb_bits
-                                                    , m_start_input_bits
-                                                    , m_nb_input_bits
-                                                    , m_start_registers
-                                                    , m_nb_registers
-                                                    , m_start_input_registers
-                                                    , m_nb_input_registers);
-    if (m_mapping == NULL) {
-        Stop();
-        printf("ModbusMapping error\n");
-        throw;
-    }
-    m_fd = modbus_tcp_listen(m_ctx, 1);
-
-}
-
 void ModbusServer::Start()
 {
-    Init();
     int master_socket;
     int rc;
     fd_set refset;
@@ -179,5 +157,68 @@ void ModbusServer::Stop()
     modbus_mapping_free(m_mapping);
     modbus_close(m_ctx);
     modbus_free(m_ctx);
+}
+
+void ModbusServer::SetBit(const int addr, unsigned char val)
+{
+    m_mapping->tab_bits[addr] = val;
+}
+
+void ModbusServer::SetInputBit(const int addr, unsigned char val)
+{
+    m_mapping->tab_input_bits[addr] = val;
+}
+
+void ModbusServer::SetRegister(const int addr, unsigned short val)
+{
+    m_mapping->tab_registers[addr] = val;
+}
+
+void ModbusServer::SetInputRegister(const int addr, unsigned short val)
+{
+    m_mapping->tab_input_registers[addr] = val;
+}
+
+unsigned char ModbusServer::GetBit(const int addr)
+{
+    return m_mapping->tab_bits[addr];
+}
+
+unsigned char ModbusServer::GetInputBit(const int addr)
+{
+    return m_mapping->tab_input_bits[addr];
+}
+
+unsigned short ModbusServer::GetRegister(const int addr)
+{
+    return m_mapping->tab_registers[addr];
+}
+
+unsigned short ModbusServer::GetInputRegister(const int addr)
+{
+    return m_mapping->tab_input_registers[addr];
+}
+
+void ModbusServer::Init()
+{
+    m_stop = false;
+    m_stopped = false;
+    m_ctx = modbus_new_tcp(m_ip.c_str(), m_port);
+    m_mapping = modbus_mapping_new_start_address(m_start_bits
+                                                    , m_nb_bits
+                                                    , m_start_input_bits
+                                                    , m_nb_input_bits
+                                                    , m_start_registers
+                                                    , m_nb_registers
+                                                    , m_start_input_registers
+                                                    , m_nb_input_registers);
+    if (m_mapping == NULL)
+    {
+        Stop();
+        printf("ModbusMapping error\n");
+        throw;
+    }
+    m_fd = modbus_tcp_listen(m_ctx, 1);
+
 }
 

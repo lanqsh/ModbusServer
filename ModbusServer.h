@@ -17,9 +17,18 @@ public:
     , unsigned int nb_input_registers = 200);
     ~ModbusServer();
 
-     void Start();
-     void Stop();
+    void Start();
+    void Stop();
 
+    void SetBit(const int addr, unsigned char val);
+    void SetInputBit(const int addr, unsigned char val);
+    void SetRegister(const int addr, unsigned short val);
+    void SetInputRegister(const int addr, unsigned short val);
+
+    unsigned char GetBit(const int addr);
+    unsigned char GetInputBit(const int addr);
+    unsigned short GetRegister(const int addr);
+    unsigned short GetInputRegister(const int addr);
 private:
     void Init();
 private:

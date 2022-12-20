@@ -96,6 +96,18 @@ int main(void)
     tab_rw_rq_registers = (uint16_t *) malloc(nb * sizeof(uint16_t));
     memset(tab_rw_rq_registers, 0, nb * sizeof(uint16_t));
 
+    /* WRITE BIT */
+    rc = modbus_write_bit(ctx, addr, 0xFF);
+    if (rc != 1) {
+        printf("ERROR modbus_write_bit (%d)\n", rc);
+        printf("Address = %d, value = %d\n", addr, tab_rq_bits[0]);
+        nb_fail++;
+    } else {
+        rc = modbus_read_bits(ctx, addr, nb, tab_rp_bits);
+        printf("modbus_read_bits:%d\n", rc);
+        PrintBuf((char*)tab_rp_bits, nb);
+    }
+
     rc = modbus_read_registers(ctx, addr, nb, tab_rp_registers);
     printf("modbus_read_registers:%d\n", rc);
     PrintBuf((char*)tab_rp_registers, nb*2);
@@ -104,7 +116,7 @@ int main(void)
     }
 
     nb_loop = nb_fail = 0;
-    while (nb_loop++ < LOOP) {
+    while (nb_loop++ <= LOOP) {
         /* SINGLE REGISTER */
         rc = modbus_write_register(ctx, addr, val);
 
