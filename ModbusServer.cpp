@@ -122,12 +122,12 @@ void ModbusServer::Start()
 
                     modbus_set_socket(m_ctx, master_socket);
                     rc = modbus_receive(m_ctx, query);
-                    printf("modbus_receive:%d\n", rc);
+                    //printf("modbus_receive:%d\n", rc);
 
                     if (rc != -1)
                     {
                         modbus_reply(m_ctx, query, rc, m_mapping);
-                        PrintBuf(query, rc);
+                        //PrintBuf(query, rc);
                     }
                     else
                     {
@@ -164,9 +164,21 @@ void ModbusServer::SetBit(const int addr, unsigned char val)
     m_mapping->tab_bits[addr] = val;
 }
 
+void ModbusServer::SetBit(unsigned char *buf, unsigned char len)
+{
+    if (len > m_nb_bits) return;
+    memcpy(m_mapping->tab_bits, buf, len);
+}
+
 void ModbusServer::SetInputBit(const int addr, unsigned char val)
 {
     m_mapping->tab_input_bits[addr] = val;
+}
+
+void ModbusServer::SetInputBit(unsigned char *buf, unsigned char len)
+{
+    if (len > m_nb_input_bits) return;
+    memcpy(m_mapping->tab_input_bits, buf, len);
 }
 
 void ModbusServer::SetRegister(const int addr, unsigned short val)
@@ -174,9 +186,21 @@ void ModbusServer::SetRegister(const int addr, unsigned short val)
     m_mapping->tab_registers[addr] = val;
 }
 
+void ModbusServer::SetRegister(unsigned char *buf, unsigned char len)
+{
+    if (len > m_nb_registers * 2) return;
+    memcpy(m_mapping->tab_registers, buf, len);
+}
+
 void ModbusServer::SetInputRegister(const int addr, unsigned short val)
 {
     m_mapping->tab_input_registers[addr] = val;
+}
+
+void ModbusServer::SetInputRegister(unsigned char *buf, unsigned char len)
+{
+    if (len > m_nb_input_registers * 2) return;
+    memcpy(m_mapping->tab_input_registers, buf, len);
 }
 
 unsigned char ModbusServer::GetBit(const int addr)

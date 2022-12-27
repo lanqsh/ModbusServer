@@ -97,22 +97,32 @@ int main(void)
     memset(tab_rw_rq_registers, 0, nb * sizeof(uint16_t));
 
     /* WRITE BIT */
-    rc = modbus_write_bit(ctx, addr, 0xFF);
-    if (rc != 1) {
-        printf("ERROR modbus_write_bit (%d)\n", rc);
-        printf("Address = %d, value = %d\n", addr, tab_rq_bits[0]);
-        nb_fail++;
-    } else {
-        rc = modbus_read_bits(ctx, addr, nb, tab_rp_bits);
-        printf("modbus_read_bits:%d\n", rc);
-        PrintBuf((char*)tab_rp_bits, nb);
-    }
+    tab_rq_bits[0] = 0xFF;
+    tab_rq_bits[1] = 0xFF;
+    rc = modbus_write_bits(ctx, addr, nb, tab_rq_bits);
+    rc = modbus_read_bits(ctx, addr, nb, tab_rp_bits);
+    printf("modbus_read_bits:%d\n", rc);
+    PrintBuf((char*)tab_rp_bits, nb);
 
-    rc = modbus_read_registers(ctx, addr, nb, tab_rp_registers);
-    printf("modbus_read_registers:%d\n", rc);
-    PrintBuf((char*)tab_rp_registers, nb*2);
+    int read_cnt = 100;
+    rc = modbus_read_registers(ctx, 0, read_cnt, tab_rp_registers);
     if (rc < 0) {
         printf("ERROR modbus_read_registers single (%d)\n", rc);
+    }
+    PrintBuf((char*)tab_rp_registers, nb*2);
+
+    for (int i = 0; i < read_cnt; ++i)
+    {
+        unsigned short result = tab_rp_registers[i];
+        printf("modbus_read_registers:%d result:%d\n", rc, result);
+    }
+
+    memset(tab_rp_registers, 0, nb * sizeof(uint16_t));
+    modbus_read_input_registers(ctx, 0, read_cnt, tab_rp_registers);
+    for (int i = 0; i < read_cnt; ++i)
+    {
+        unsigned short result = tab_rp_registers[i];
+        printf("modbus_read_input_registers:%d result:%d\n", rc, result);
     }
 
     nb_loop = nb_fail = 0;
