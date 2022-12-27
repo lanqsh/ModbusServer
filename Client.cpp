@@ -34,11 +34,12 @@
 
 #define PrintBuf(buf, bufLength) do { \
         char pBuf[1024] = {0}; \
-        if (1 > bufLength || NULL == buf || bufLength >= 256) { \
-            snprintf(pBuf, 1024, "buf is %p, length is %d\n", buf, bufLength); \
+        char *p = (char*)buf; \
+        if (1 > bufLength || NULL == p || bufLength >= 256) { \
+            snprintf(pBuf, 1024, "buf is %p, length is %d\n", p, bufLength); \
         } else { \
             for (unsigned int i = 0; i < bufLength; ++i) { \
-                snprintf(pBuf+i*3, 4, "%02x ", buf[i]); \
+                snprintf(pBuf+i*3, 4, "%.2X ", p[i]); \
             } \
         } \
         printf("[%s %d]%s\n",__func__,__LINE__, pBuf); \
@@ -79,7 +80,7 @@ int main(void)
     }
 
     /* Allocate and initialize the different memory spaces */
-    nb = ADDRESS_END - ADDRESS_START;
+    nb = ADDRESS_END - ADDRESS_START + 1;
 
     tab_rq_bits = (uint8_t *) malloc(nb * sizeof(uint8_t));
     memset(tab_rq_bits, 0, nb * sizeof(uint8_t));
@@ -102,14 +103,14 @@ int main(void)
     rc = modbus_write_bits(ctx, addr, nb, tab_rq_bits);
     rc = modbus_read_bits(ctx, addr, nb, tab_rp_bits);
     printf("modbus_read_bits:%d\n", rc);
-    PrintBuf((char*)tab_rp_bits, nb);
+    PrintBuf(tab_rp_bits, nb);
 
     int read_cnt = 100;
     rc = modbus_read_registers(ctx, 0, read_cnt, tab_rp_registers);
     if (rc < 0) {
         printf("ERROR modbus_read_registers single (%d)\n", rc);
     }
-    PrintBuf((char*)tab_rp_registers, nb*2);
+    PrintBuf(tab_rp_registers, nb*2);
 
     for (int i = 0; i < read_cnt; ++i)
     {
@@ -126,12 +127,11 @@ int main(void)
     }
 
     nb_loop = nb_fail = 0;
-    while (nb_loop++ <= LOOP) {
+    while (nb_loop++ < LOOP) {
         /* SINGLE REGISTER */
         rc = modbus_write_register(ctx, addr, val);
 
         printf("modbus_write_register rc:%d addr:%d val:%d\n", rc, addr, val);
-        PrintBuf((char*)tab_rq_registers, nb*2);
         if (rc != 1) {
             printf("ERROR modbus_write_register (%d)\n", rc);
             printf("Address = %d, value = %d (0x%X)\n",
@@ -142,7 +142,7 @@ int main(void)
         } else {
             rc = modbus_read_registers(ctx, 0, nb, tab_rp_registers);
             printf("modbus_read_registers:%d\n", rc);
-            PrintBuf((char*)tab_rp_registers, nb*2);
+            //PrintBuf(tab_rp_registers, nb*2);
             if (rc < 0) {
                 printf("ERROR modbus_read_registers single (%d)\n", rc);
                 nb_fail++;
@@ -151,12 +151,12 @@ int main(void)
         addr++;
         val++;
 
-        sleep(1);
         printf("Test: ");
         if (nb_fail)
             printf("%d FAILS\n", nb_fail);
         else
             printf("SUCCESS\n");
+        sleep(1);
     }
 
     /* Free the memory */

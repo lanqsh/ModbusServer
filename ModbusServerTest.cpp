@@ -25,7 +25,7 @@ int main()
     {
         std::cout << "test set & get" << std::endl;
         server.SetRegister(10, 2555);
-        unsigned short val = server.GetRegister(11);
+        unsigned short val = server.GetRegister(10);
         std::cout << "GetRegister:" << val << std::endl;
     }
 

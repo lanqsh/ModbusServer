@@ -14,14 +14,15 @@ using std::string;
 
 #define PrintBuf(buf, bufLength) do { \
         char pBuf[1024] = {0}; \
-        if (1 > bufLength || NULL == buf || bufLength >= 256) { \
-            snprintf(pBuf, 1024, "buf is %p, length is %d\n", buf, bufLength); \
+        char *p = (char*)buf; \
+        if (1 > bufLength || NULL == p || bufLength >= 256) { \
+            snprintf(pBuf, 1024, "buf is %p, length is %d\n", p, bufLength); \
         } else { \
             for (unsigned int i = 0; i < bufLength; ++i) { \
-                snprintf(pBuf+i*3, 4, "%02x ", buf[i]); \
+                snprintf(pBuf+i*3, 4, "%.2X ", p[i]); \
             } \
         } \
-        printf("[%s %s %d]%s\n",__FILE__,__func__,__LINE__, pBuf); \
+        printf("[%s %d]%s\n",__func__,__LINE__, pBuf); \
     } while (0)
 
 ModbusServer::ModbusServer(const std::string &ip
