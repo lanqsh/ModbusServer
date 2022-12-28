@@ -11,6 +11,7 @@
 #include "ModbusServer.h"
 
 using std::string;
+#define NB_CONNECTION 1024
 
 #define PrintBuf(buf, bufLength) do { \
         char pBuf[1024] = {0}; \
@@ -26,26 +27,59 @@ using std::string;
     } while (0)
 
 ModbusServer::ModbusServer(const std::string &ip
-                                , const int port
-                                , unsigned int start_bits
-                                , unsigned int nb_bits
-                                , unsigned int start_input_bits
-                                , unsigned int nb_input_bits
-                                , unsigned int start_registers
-                                , unsigned int nb_registers
-                                , unsigned int start_input_registers
-                                , unsigned int nb_input_registers)
-                                : m_ip(ip)
-                                , m_port(port)
-                                , m_start_bits(start_bits)
-                                , m_nb_bits(nb_bits)
-                                , m_start_input_bits(start_input_bits)
-                                , m_nb_input_bits(nb_input_bits)
-                                , m_start_registers(start_registers)
-                                , m_nb_registers(nb_registers)
-                                , m_start_input_registers(start_input_registers)
-                                , m_nb_input_registers(nb_input_registers)
+                            , const int port
+                            , unsigned int start_bits
+                            , unsigned int nb_bits
+                            , unsigned int start_input_bits
+                            , unsigned int nb_input_bits
+                            , unsigned int start_registers
+                            , unsigned int nb_registers
+                            , unsigned int start_input_registers
+                            , unsigned int nb_input_registers)
+                            : m_ip(ip)
+                            , m_port(port)
+                            , m_start_bits(start_bits)
+                            , m_nb_bits(nb_bits)
+                            , m_start_input_bits(start_input_bits)
+                            , m_nb_input_bits(nb_input_bits)
+                            , m_start_registers(start_registers)
+                            , m_nb_registers(nb_registers)
+                            , m_start_input_registers(start_input_registers)
+                            , m_nb_input_registers(nb_input_registers)
 {
+    m_mode = Backend_T::TCP;
+    Init();
+}
+
+ModbusServer::ModbusServer(const std::string &device
+                            , const int baud
+                            , const char parity
+                            , const int data_bit
+                            , const int stop_bit
+                            , unsigned int start_bits
+                            , unsigned int nb_bits
+                            , unsigned int start_input_bits
+                            , unsigned int nb_input_bits
+                            , unsigned int start_registers
+                            , unsigned int nb_registers
+                            , unsigned int start_input_registers
+                            , unsigned int nb_input_registers)
+                            : m_device(device)
+                            , m_baud(baud)
+                            , m_parity(parity)
+                            , m_data_bit(data_bit)
+                            , m_stop_bit(stop_bit)
+                            , m_start_bits(start_bits)
+                            , m_nb_bits(nb_bits)
+                            , m_start_input_bits(start_input_bits)
+                            , m_nb_input_bits(nb_input_bits)
+                            , m_start_registers(start_registers)
+                            , m_nb_registers(nb_registers)
+                            , m_start_input_registers(start_input_registers)
+                            , m_nb_input_registers(nb_input_registers)
+{
+    m_mode = Backend_T::RTU;
+    m_sid = 0x01;
     Init();
 }
 
@@ -54,7 +88,7 @@ ModbusServer::~ModbusServer()
     if (!m_stop) Stop();
 }
 
-void ModbusServer::Start()
+void ModbusServer::RunTCP()
 {
     int master_socket;
     int rc;
@@ -71,6 +105,8 @@ void ModbusServer::Start()
 
     /* Keep track of the max file descriptor */
     fdmax = m_fd;
+
+    m_stopped = false;
 
     while (!m_stop)
     {
@@ -151,6 +187,34 @@ void ModbusServer::Start()
     m_stopped = true;
 }
 
+void ModbusServer::RunRTU()
+{
+    for (;;) {
+        uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
+        memset(query, 0, MODBUS_TCP_MAX_ADU_LENGTH);
+
+        int rc = modbus_receive(m_ctx, query);
+        //printf("RunRTU:%d\n", rc);
+        //PrintBuf(query, 128);
+        if (rc > 0) {
+            modbus_reply(m_ctx, query, rc, m_mapping);
+        } else if (rc == -1) {
+            /* Connection closed by the client or error */
+            printf("error:%d\n", rc);
+            continue;
+        }
+    }
+}
+
+void ModbusServer::Start()
+{
+    if (m_mode == Backend_T::TCP) {
+        RunTCP();
+    } else if (m_mode == Backend_T::RTU) {
+        RunRTU();
+    }
+}
+
 void ModbusServer::Stop()
 {
     m_stop = true;
@@ -224,26 +288,49 @@ unsigned short ModbusServer::GetInputRegister(const int addr)
     return m_mapping->tab_input_registers[addr];
 }
 
+void ModbusServer::SetSlave(const int slave)
+{
+    m_sid = slave;
+    modbus_set_slave(m_ctx, slave);
+}
+
 void ModbusServer::Init()
 {
     m_stop = false;
-    m_stopped = false;
-    m_ctx = modbus_new_tcp(m_ip.c_str(), m_port);
+    m_stopped = true;
+
+    if (m_mode == Backend_T::TCP) {
+        m_ctx = modbus_new_tcp(m_ip.c_str(), m_port);
+    } else if (m_mode == Backend_T::RTU) {
+        m_ctx = modbus_new_rtu(m_device.c_str(), m_baud, m_parity, m_data_bit, m_stop_bit);
+        SetSlave(m_sid);
+    }
+
+    //modbus_set_debug(m_ctx, TRUE);
+
     m_mapping = modbus_mapping_new_start_address(m_start_bits
-                                                    , m_nb_bits
-                                                    , m_start_input_bits
-                                                    , m_nb_input_bits
-                                                    , m_start_registers
-                                                    , m_nb_registers
-                                                    , m_start_input_registers
-                                                    , m_nb_input_registers);
-    if (m_mapping == NULL)
+                                                , m_nb_bits
+                                                , m_start_input_bits
+                                                , m_nb_input_bits
+                                                , m_start_registers
+                                                , m_nb_registers
+                                                , m_start_input_registers
+                                                , m_nb_input_registers);
+    int rc = 0;
+    if (m_mode == Backend_T::TCP) {
+        m_fd = modbus_tcp_listen(m_ctx, NB_CONNECTION);
+    } else if (m_mode == Backend_T::RTU) {
+        rc = modbus_connect(m_ctx);
+    }
+
+    if (!m_ctx || !m_mapping || rc == -1)
     {
+        printf("Init error,m_ctx:%p m_mapping:%p rc:%d\n", m_ctx, m_mapping, rc);
+        if (rc == -1) {
+            fprintf(stderr, "Unable to connect %s\n", modbus_strerror(errno));
+        }
         Stop();
-        printf("ModbusMapping error\n");
         throw;
     }
-    m_fd = modbus_tcp_listen(m_ctx, 1);
-
 }
 

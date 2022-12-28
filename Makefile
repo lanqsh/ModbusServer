@@ -1,5 +1,7 @@
 CPP=g++
-CPPFLAGS= -I /usr/local/include/modbus
+CPPFLAGS= -I/usr/local/include/modbus  -std=c++11
+#CPP=arm-linux-g++
+#CPPFLAGS= -I./include/modbus -L./lib -std=c++11
 LIBS=-lmodbus -lpthread
 server_src = ModbusServer.cpp ModbusServerTest.cpp
 client_src = Client.cpp
@@ -22,10 +24,10 @@ $(client_obj):%.o:%.cpp
 
 
 $(server): $(server_obj)
-	$(CPP) $^ -o $@ $(LIBS)
+	$(CPP) $^ -o $@ $(CPPFLAGS) $(LIBS)
 
 $(client): $(client_obj)
-	$(CPP) $^ -o $@ $(LIBS)
+	$(CPP) $^ -o $@ $(CPPFLAGS) $(LIBS)
 
 
 clean:

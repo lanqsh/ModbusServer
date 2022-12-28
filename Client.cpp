@@ -28,9 +28,16 @@
    range defined by the following defines.
 */
 #define LOOP          100
-#define SERVER_ID     17
+#define SERVER_ID     0x01
 #define ADDRESS_START 0
 #define ADDRESS_END   99
+
+enum {
+    TCP,
+    TCP_PI,
+    RTU
+};
+
 
 #define PrintBuf(buf, bufLength) do { \
         char pBuf[1024] = {0}; \
@@ -48,8 +55,11 @@
 /* At each loop, the program works in the range ADDRESS_START to
  * ADDRESS_END then ADDRESS_START + 1 to ADDRESS_END and so on.
  */
-int main(void)
+int main(int argc, char *argv[])
 {
+    int use_backend;
+    char *ip_or_device;
+
     modbus_t *ctx;
     int rc;
     int nb_fail;
@@ -63,15 +73,55 @@ int main(void)
     uint16_t *tab_rw_rq_registers;
     uint16_t *tab_rp_registers;
 
-    /* RTU */
-    /*
-        ctx = modbus_new_rtu("/dev/ttyUSB0", 19200, 'N', 8, 1);
-        modbus_set_slave(ctx, SERVER_ID);
-    */
+    if (argc > 1) {
+        if (strcmp(argv[1], "tcp") == 0) {
+            use_backend = TCP;
+        } else if (strcmp(argv[1], "tcppi") == 0) {
+            use_backend = TCP_PI;
+        } else if (strcmp(argv[1], "rtu") == 0) {
+            use_backend = RTU;
+        } else {
+            printf("Modbus client for unit testing\n");
+            printf("Usage:\n  %s [tcp|tcppi|rtu]\n", argv[0]);
+            printf("Eg. tcp 127.0.0.1 or rtu /dev/ttyUSB1\n\n");
+            exit(1);
+        }
+    } else {
+        /* By default */
+        use_backend = TCP;
+    }
 
-    /* TCP */
-    ctx = modbus_new_tcp("0.0.0.0", 1502);
-    //modbus_set_debug(ctx, TRUE);
+    if (argc > 2) {
+        ip_or_device = argv[2];
+    } else {
+        switch (use_backend) {
+        case TCP:
+            ip_or_device = "0.0.0.0";
+            break;
+        case TCP_PI:
+            ip_or_device = "::1";
+            break;
+        case RTU:
+            ip_or_device = "/dev/ttyS1";
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (use_backend == TCP) {
+        ctx = modbus_new_tcp(ip_or_device, 1502);
+    } else if (use_backend == TCP_PI) {
+        ctx = modbus_new_tcp_pi(ip_or_device, "1502");
+    } else {
+        ctx = modbus_new_rtu(ip_or_device, 9600, 'N', 8, 1);
+        modbus_set_slave(ctx, SERVER_ID);
+    }
+    if (ctx == NULL) {
+        fprintf(stderr, "Unable to allocate libmodbus context\n");
+        return -1;
+    }
+    modbus_set_debug(ctx, TRUE);
 
     if (modbus_connect(ctx) == -1) {
         fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
