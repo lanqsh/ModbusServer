@@ -94,6 +94,8 @@ void ModbusServer::RunTCP()
     int rc;
     fd_set refset;
     fd_set rdset;
+    struct timeval timeout;
+    timeout.tv_sec = 3;
 
     /* Maximum file descriptor number */
     int fdmax;
@@ -106,12 +108,10 @@ void ModbusServer::RunTCP()
     /* Keep track of the max file descriptor */
     fdmax = m_fd;
 
-    m_stopped = false;
-
     while (!m_stop)
     {
         rdset = refset;
-        if (select(fdmax+1, &rdset, NULL, NULL, NULL) == -1)
+        if (select(fdmax+1, &rdset, NULL, NULL, &timeout) == -1)
         {
             perror("Server select() failure.");
             continue;
@@ -184,12 +184,12 @@ void ModbusServer::RunTCP()
             }
         }
     }
-    m_stopped = true;
 }
 
 void ModbusServer::RunRTU()
 {
-    for (;;) {
+    while (!m_stop)
+    {
         uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
         memset(query, 0, MODBUS_TCP_MAX_ADU_LENGTH);
 
@@ -208,11 +208,13 @@ void ModbusServer::RunRTU()
 
 void ModbusServer::Start()
 {
+    m_stopped = false;
     if (m_mode == Backend_T::TCP) {
         RunTCP();
     } else if (m_mode == Backend_T::RTU) {
         RunRTU();
     }
+    m_stopped = true;
 }
 
 void ModbusServer::Stop()

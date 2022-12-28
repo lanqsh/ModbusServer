@@ -78,8 +78,8 @@ int main(int argc, char *argv[])
     sp_server->SetRegister(reinterpret_cast<unsigned char*>(v.data()), v.size() *2);
     sp_server->SetInputRegister(reinterpret_cast<unsigned char*>(v.data()), v.size() *2);
 
-    //std::thread t(&ModbusServer::Start, sp_server.get());
-    sp_server->Start();
+    std::thread t(&ModbusServer::Start, sp_server.get());
+    //sp_server->Start();
 
     //test set & get
     {
@@ -96,6 +96,6 @@ int main(int argc, char *argv[])
         sleep(1);
     }
 
-    //server.Stop();
-    //t.join();
+    sp_server->Stop();
+    t.join();
 }
