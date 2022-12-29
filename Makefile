@@ -3,7 +3,7 @@ CPPFLAGS= -I/usr/local/include/modbus  -std=c++11
 #CPP=arm-linux-g++
 #CPPFLAGS= -I./include/modbus -L./lib -std=c++11
 LIBS=-lmodbus -lpthread
-server_src = ModbusServer.cpp ModbusServerTest.cpp
+server_src = ModbusServer.cpp Server.cpp
 client_src = Client.cpp
 
 server_obj = $(patsubst %.cpp, %.o, $(server_src))

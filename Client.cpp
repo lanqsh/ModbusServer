@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 #include <modbus.h>
 
@@ -58,7 +59,7 @@ enum {
 int main(int argc, char *argv[])
 {
     int use_backend;
-    char *ip_or_device;
+    std::string ip_or_device;
 
     modbus_t *ctx;
     int rc;
@@ -110,11 +111,11 @@ int main(int argc, char *argv[])
     }
 
     if (use_backend == TCP) {
-        ctx = modbus_new_tcp(ip_or_device, 1502);
+        ctx = modbus_new_tcp(ip_or_device.c_str(), 1502);
     } else if (use_backend == TCP_PI) {
-        ctx = modbus_new_tcp_pi(ip_or_device, "1502");
+        ctx = modbus_new_tcp_pi(ip_or_device.c_str(), "1502");
     } else {
-        ctx = modbus_new_rtu(ip_or_device, 9600, 'N', 8, 1);
+        ctx = modbus_new_rtu(ip_or_device.c_str(), 9600, 'N', 8, 1);
         modbus_set_slave(ctx, SERVER_ID);
     }
     if (ctx == NULL) {

@@ -19,7 +19,7 @@ enum {
 int main(int argc, char *argv[])
 {
     int use_backend;
-    char *ip_or_device;
+    std:: string ip_or_device;
 
     if (argc > 1) {
         if (strcmp(argv[1], "tcp") == 0) {
@@ -60,11 +60,11 @@ int main(int argc, char *argv[])
 
     std::shared_ptr<ModbusServer> sp_server = nullptr;
     if (use_backend == TCP) {
-        sp_server = std::make_shared<ModbusServer>(std::string(ip_or_device), 1502);
+        sp_server = std::make_shared<ModbusServer>(ip_or_device, 1502);
     } else if (use_backend == TCP_PI) {
 
     } else {
-        sp_server = std::make_shared<ModbusServer>(std::string(ip_or_device), 9600, 'N', 8, 1);
+        sp_server = std::make_shared<ModbusServer>(ip_or_device, 9600, 'N', 8, 1);
         int id = 1;
         sp_server->SetSlave(id);
     }

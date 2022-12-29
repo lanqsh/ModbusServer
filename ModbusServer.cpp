@@ -96,6 +96,7 @@ void ModbusServer::RunTCP()
     fd_set rdset;
     struct timeval timeout;
     timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
 
     /* Maximum file descriptor number */
     int fdmax;
@@ -154,8 +155,6 @@ void ModbusServer::RunTCP()
                 {
                     /* An already connected master has sent a new query */
                     uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
-                    int data = 0;
-                    int address=0;
 
                     modbus_set_socket(m_ctx, master_socket);
                     rc = modbus_receive(m_ctx, query);
@@ -194,8 +193,7 @@ void ModbusServer::RunRTU()
         memset(query, 0, MODBUS_TCP_MAX_ADU_LENGTH);
 
         int rc = modbus_receive(m_ctx, query);
-        //printf("RunRTU:%d\n", rc);
-        //PrintBuf(query, 128);
+
         if (rc > 0) {
             modbus_reply(m_ctx, query, rc, m_mapping);
         } else if (rc == -1) {
@@ -327,10 +325,7 @@ void ModbusServer::Init()
 
     if (!m_ctx || !m_mapping || rc == -1)
     {
-        printf("Init error,m_ctx:%p m_mapping:%p rc:%d\n", m_ctx, m_mapping, rc);
-        if (rc == -1) {
-            fprintf(stderr, "Unable to connect %s\n", modbus_strerror(errno));
-        }
+        fprintf(stderr, "Init error,m_ctx:%p m_mapping:%p rc:%d errno:%d\n", m_ctx, m_mapping, rc, modbus_strerror(errno));
         Stop();
         throw;
     }

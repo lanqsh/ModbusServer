@@ -10,30 +10,30 @@ enum class Backend_T {
 class ModbusServer
 {
 public:
-    ModbusServer(const std::string &ip = "0.0.0.0"
-                    , const int port = 1502
-                    , unsigned int start_bits = 0
-                    , unsigned int nb_bits = 100
-                    , unsigned int start_input_bits = 0
-                    , unsigned int nb_input_bits = 100
-                    , unsigned int start_registers = 0
-                    , unsigned int nb_registers = 100
-                    , unsigned int start_input_registers = 0
-                    , unsigned int nb_input_registers = 100);
+    explicit ModbusServer(const std::string &ip = "0.0.0.0"
+                            , const int port = 1502
+                            , unsigned int start_bits = 0
+                            , unsigned int nb_bits = 100
+                            , unsigned int start_input_bits = 0
+                            , unsigned int nb_input_bits = 100
+                            , unsigned int start_registers = 0
+                            , unsigned int nb_registers = 100
+                            , unsigned int start_input_registers = 0
+                            , unsigned int nb_input_registers = 100);
 
-    ModbusServer(const std::string &device
-                    , const int baud
-                    , const char parity
-                    , const int data_bit
-                    , const int stop_bit
-                    , unsigned int start_bits = 0
-                    , unsigned int nb_bits = 100
-                    , unsigned int start_input_bits = 0
-                    , unsigned int nb_input_bits = 100
-                    , unsigned int start_registers = 0
-                    , unsigned int nb_registers = 100
-                    , unsigned int start_input_registers = 0
-                    , unsigned int nb_input_registers = 100);
+    explicit ModbusServer(const std::string &device
+                            , const int baud
+                            , const char parity
+                            , const int data_bit
+                            , const int stop_bit
+                            , unsigned int start_bits = 0
+                            , unsigned int nb_bits = 100
+                            , unsigned int start_input_bits = 0
+                            , unsigned int nb_input_bits = 100
+                            , unsigned int start_registers = 0
+                            , unsigned int nb_registers = 100
+                            , unsigned int start_input_registers = 0
+                            , unsigned int nb_input_registers = 100);
 
     ~ModbusServer();
 
